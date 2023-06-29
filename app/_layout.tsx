@@ -1,5 +1,4 @@
-import { Slot, useRouter } from 'expo-router'
-import * as SplashScreen from "expo-splash-screen"
+import { Slot, useRouter, SplashScreen } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import * as NavigationBar from 'expo-navigation-bar';
 import React, { useCallback, useEffect, useState } from 'react'
@@ -12,6 +11,7 @@ import {
 } from 'react-native-paper'
 import { useAlbumsStore, useMediaStore } from '../store'
 import { mediaStorage } from '../config';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Amoled Dark with puprle accent
 const myTheme : MD3Theme = {
@@ -65,7 +65,7 @@ const routes : Route[] = [
     { key: 'Settings', title: 'Settings', focusedIcon: 'cog', unfocusedIcon: 'cog-outline' }
 ]
 
-// SplashScreen.preventAutoHideAsync()
+SplashScreen.preventAutoHideAsync()
 
 export default function AppLayout() {
     const router = useRouter()
@@ -79,10 +79,13 @@ export default function AppLayout() {
     useEffect(() => {
         async function load() {
             if (isReady) return
+
             await NavigationBar.setBackgroundColorAsync(myTheme.colors.elevation.level0)
             await NavigationBar.setButtonStyleAsync("light")
-            // await NavigationBar.setPositionAsync('absolute')
-            setAlbumsState(await mediaStorage.albums())
+            await mediaStorage.albums().then(setAlbumsState)
+
+            // await 2s to prevent the splash screen to be hidden too early
+            await new Promise(resolve => setTimeout(resolve, 2000))
 
             setIsReady(true)
         }
@@ -97,10 +100,10 @@ export default function AppLayout() {
         
     }, [fullScreen])
 
-    const onLayoutRootView = useCallback(async () => {
-        if (isReady) await SplashScreen.hideAsync()
+    const onlayout = useCallback(() => {
+        if (isReady) SplashScreen.hideAsync()
     }, [isReady])
-    
+
     if (!isReady) return null
 
     return (
@@ -109,11 +112,11 @@ export default function AppLayout() {
             style={[styles.container, {
                 backgroundColor: myTheme.colors.elevation.level0
             }]}
-            onLayout={onLayoutRootView}
+            onLayout={onlayout}
         >
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container}>
                 <Slot/>
-            </View>
+            </SafeAreaView>
 
             {!fullScreen && <BottomNavigation.Bar
                 navigationState={{ index: indexNav, routes }}
@@ -133,7 +136,7 @@ export default function AppLayout() {
             />}
 
         </View>
-        <StatusBar style="light" hidden={fullScreen}/>
+        <StatusBar style="light" hidden={fullScreen} />
     </PaperProvider>
     )
 }

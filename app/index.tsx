@@ -1,32 +1,43 @@
-import React, { useEffect, useState } from 'react'
-import { Dimensions, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, IconButton, Text, useTheme } from 'react-native-paper'
+import React, { useEffect, useRef, useState } from 'react'
+import { StyleSheet, View, ToastAndroid } from 'react-native';
+import { 
+    ActivityIndicator,
+    Button,
+    FAB,
+    IconButton,
+    Text,
+    useTheme
+} from 'react-native-paper'
 import { useAlbumsStore, useMediaStore } from '../store'
 import * as MediaLibrary from 'expo-media-library'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import * as Sharing from 'expo-sharing'
+import { LinearGradient } from 'expo-linear-gradient'
 
-import { Animated } from 'react-native'
+import { Animated, Image } from 'react-native'
 import { HandlerStateChangeEvent, PanGestureHandler, PanGestureHandlerEventPayload, State } from 'react-native-gesture-handler'
-import { Image } from 'expo-image'
 import { Randomizer } from '../classes'
 import { AssetHistory } from '../interfaces';
-import VideoPlayer from '../components/VideoPlayer'
 import * as ScreenOrientation from 'expo-screen-orientation'
-
-const loadNames = Object.freeze({
-    firstLoad: 'firstLoad',
-})
+import CustomSlider from '../components/CustomSlider';
+import { AVPlaybackStatusSuccess, ResizeMode, Video } from 'expo-av';
 
 // const maxAssetsPagination = 100
 const maxSizeHistory = 26
 const initialHistorySize = 10
+const timerInterval = 5500
 
 export default function Home() {
     const theme = useTheme()
-    const [loadStatus, setLoadStatus] = useState({
-        [loadNames.firstLoad]: true,
-    })
-    const setLoadStatusIn = (name: string, value: boolean) => setLoadStatus(prev => ({ ...prev, [name]: value }))
+    const [loadStatus, setLoadStatus] = useState(true)
+
+    const [openMore, setOpenMore] = useState(false)
+    const [showOptions, setShowOptions] = useState(false)
+    // Timer 
+    const [timer, setTimer] = useState<NodeJS.Timeout | null>(null)
+    
+    const ref: React.MutableRefObject<Video | null> = useRef(null)
+    const [status, setStatus] = useState<AVPlaybackStatusSuccess>()
+    const [stringDuration, setStringDuration] = useState<string>('0:00')
 
     const albumsState = useAlbumsStore(state => state.albums)
 
@@ -54,7 +65,6 @@ export default function Home() {
     let offsetY = 0
 
     useEffect(() => {
-        startApp()
 
         const onChangeOrientation = (listener: ScreenOrientation.OrientationChangeEvent) => {
             if (listener.orientationInfo.orientation == 
@@ -62,34 +72,61 @@ export default function Home() {
                 listener.orientationInfo.orientation ==
                 ScreenOrientation.Orientation.LANDSCAPE_RIGHT
             ) {swapFullScreen(true)}
-            
         }
-
         ScreenOrientation.addOrientationChangeListener(onChangeOrientation)
+
+        startApp()
 
         return () => {
             ScreenOrientation.removeOrientationChangeListeners()
         }
     }, [])
 
-    const startApp = () => {
-        if (albumsState.length == 0) return
+    useEffect(() => {
+        if (status?.isLoaded) 
+            if (status.durationMillis) setStringDuration(formatDuration(status.durationMillis))
+    }, [status?.isLoaded])
 
-        // Full reset
-        if (!playing) restart(true)
-        else setLoadStatusIn(loadNames.firstLoad, false)
+    function formatDuration(durationMillis: number) {
+        const pad = (num: number) => num.toString().padStart(2, '0')
+        const totalSeconds = Math.floor(durationMillis / 1000)
+        const seconds = totalSeconds % 60
+        const totalMinutes = Math.floor(totalSeconds / 60)
+        const minutes = totalMinutes % 60
+        const hours = Math.floor(totalMinutes / 60)
+        return `${hours ? hours + ':' : ''}${pad(minutes)}:${pad(seconds)}`
     }
 
+    const getIndicator = () => {
+        return status?.isLoaded ? `${formatDuration(status.positionMillis)} / ${stringDuration}` : '0:00'
+    }
+
+    const playPause = () => {
+        if (ref.current == undefined) return
+
+        if (status?.isPlaying) ref.current.pauseAsync()
+        else ref.current.playAsync()
+    }
+
+    const startApp = () => {
+        if (albumsState.length != 0) {
+            if (!playing) restart(true)
+            else setLoadStatus(false)
+        } else
+            setLoadStatus(false)
+    }
+
+    const showToast = (mess: string) => ToastAndroid.show(mess, ToastAndroid.SHORT)
+
     const restart = async (full = false) => {
-        setLoadStatusIn(loadNames.firstLoad, true)
+        setLoadStatus(true)
 
         const assts: AssetHistory[] = []
         let lftAlbums: number[] = full ? albumsState.map((_, index) => index) : leftAlbums
         let fetchAsstsCount = 0
         const rndmzrs = full ? albumsState.map((album) => new Randomizer(album.assetCount)) : randomizer
 
-        for (let i = 1; i < initialHistorySize; i++) {
-            if (leftAlbums.length == 0) break
+        for (let i = 0; i < initialHistorySize; i++){
             await getNewRandomAsset(
                 assts, fetchAsstsCount, lftAlbums, rndmzrs, albumsState, 
                 (asset) => assts.push(asset),
@@ -107,7 +144,7 @@ export default function Home() {
             playing: true,
         })
 
-        setLoadStatusIn(loadNames.firstLoad, false)
+        setLoadStatus(false)
         animateToMiddle()
     }
 
@@ -121,22 +158,25 @@ export default function Home() {
         setLftAlbums = setLeftAlbums,
         setFtchCount = setFetchingCount,
     ) {
-        if (assts.length + fecAsstsCount >= maxSizeHistory) return false
+        if (lftAlbums.length == 0) return
+        if (assts.length + fecAsstsCount >= maxSizeHistory) return
 
         // Random album from leftAlbums
         const rndAlbum = Math.floor(Math.random() * lftAlbums.length)
         const indexAlbum = lftAlbums[rndAlbum]
 
         setFtchCount((count) => count + 1)
-        const newAssetIndex = rndmzrs[indexAlbum].getRandomIndex() ?? 0
+        const newAssetIndex = rndmzrs[indexAlbum].getRandomIndex()
 
         // If indexes is empty, delete album from leftAlbums
-        if (rndmzrs[indexAlbum].indexes.length == 0) {
+        if (newAssetIndex == undefined) {
             setLftAlbums((albums) => {
                 // Delete album from leftAlbums
                 const newAlbums = albums.filter((album) => album != indexAlbum)
                 return newAlbums
             })
+            setFtchCount((count) => count - 1)
+            return
         }
 
         // GET ASSET FROM ALBUM (This is the V2, maybe change in the future)
@@ -149,9 +189,9 @@ export default function Home() {
             after: newAssetIndex.toString(),
         }).then((res) => {
             if (res.assets.length == 0) {
-                alert('Error assets in await addNewAssetToHistory')
+                showToast('Error getting files')
                 setFtchCount((count) => count - 1)
-                return false
+                return
             }
 
             addAsst({
@@ -159,9 +199,9 @@ export default function Home() {
                 mediaType: res.assets[0].mediaType,
                 name: res.assets[0].filename,
             })
-        }).finally(() => { 
+        }).catch((error) => { showToast('Error getting files ' + error)})
+        .finally(() => { 
             setFtchCount((count) => count - 1)
-            return true
         })
     }
 
@@ -170,14 +210,6 @@ export default function Home() {
             toValue: 0,
             useNativeDriver: true,
         }).start(onFinish)
-    
-    
-    // const onGestureEvent = Animated.event(
-    //     [{ nativeEvent: { 
-    //         translationY: translateY
-    //     } }],
-    //     { useNativeDriver: true }
-    // )
 
     const onGestureEvent = 
         Animated.event(
@@ -186,39 +218,38 @@ export default function Home() {
             } }],
             { useNativeDriver: true }
         )
-    
 
     const onHandlerStateChange = (event: HandlerStateChangeEvent<PanGestureHandlerEventPayload>) => {
         if (event.nativeEvent.oldState === State.ACTIVE) {
             
             offsetY += event.nativeEvent.translationY
-            let { translationY, translationX } = event.nativeEvent
+            let { translationY } = event.nativeEvent
 
             if (translationY < -120) { // Scrolling Up
-                if (indexAsset + 1 >= maxSizeHistory) {
+                if (indexAsset + 2 >= maxSizeHistory) {
                     restart()
                     return
                 }
 
-                const finAssets: boolean = indexAsset + 1 >= assets.length
-                const noAlbums: boolean = leftAlbums.length == 0
-
-                if (finAssets) {
-                    animateToMiddle()
-                    alert('Cargando assets, espera un momento')
-                    return
-                }
+                const finAssets: boolean = indexAsset + 1 >= assets.length,
+                    noAlbums: boolean = leftAlbums.length == 0
 
                 if (noAlbums && 
                     fetchingAssetsCount == 0 &&
                     finAssets) 
                 { 
-                    alert('Has llegado al final de todos los albums')
+                    showToast('You have seen all the albums')
                     restart(true)
                     return
                 }
 
-                if (assets.length - indexAsset <= initialHistorySize && !noAlbums)
+                if (finAssets) {
+                    animateToMiddle()
+                    showToast('Loading more files...')
+                    return
+                }
+
+                if (!noAlbums)
                     getNewRandomAsset()
 
                 translationY = Math.max(translationY, -100)
@@ -228,7 +259,7 @@ export default function Home() {
             else if (translationY > 120) { // Scrolling Down
                 if (indexAsset - 1 < 0) {
                     animateToMiddle()
-                    alert('Has llegado al inicio de la lista')
+                    showToast('You are at the beginning')
                     return
                 }
 
@@ -239,6 +270,12 @@ export default function Home() {
             } else animateToMiddle()
             
         }
+    }
+
+    const onShare = async () => {
+        if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(getUri())
+        } else showToast(`Sharing is not available on your platform`)
     }
 
     const animate = (
@@ -258,92 +295,157 @@ export default function Home() {
         })
     }
 
-    const rotateScreen = () => {
-        if (Dimensions.get('window').height > Dimensions.get('window').width) {
-            swapFullScreen(true)
-            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
-        }
-        else 
-            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT)
-    }
-
     const getAlbum = () => albumsState[assets[indexAsset].albumPos]
 
     const getUri = () => `file:///storage/${getAlbum().folder}${getAlbum().title}/${assets[indexAsset].name}`
 
-    if (albumsState.length == 0) return (
-        <View style={[styles.center, styles.fullSize]}>
-            <Text>
-                Aun no has seleccionado ningun album
-            </Text>
-        </View>
-    )
-
-    if (loadStatus[loadNames.firstLoad]) return (
-        <View style={[styles.center, styles.fullSize]}>
+    if (loadStatus) return (
+        <View style={[styles.bottomCenter, styles.fullSize]}>
             <ActivityIndicator animating size='large' />
         </View>
     )
 
+    if (albumsState.length == 0) return (
+        <View style={[styles.bottomCenter, styles.fullSize]}>
+            <Text> No albums selected </Text>
+            <Button
+                icon="refresh"
+                onPress={() => restart(true)}
+            >
+                Retry
+            </Button>
+        </View>
+    )
+
     if (!assets || assets?.length == 0) return (
-        <View style={[styles.center, styles.fullSize]}>
-            <Text variant='displayMedium'>No hay assets</Text>
+        <View style={[styles.bottomCenter, styles.fullSize]}>
+            <Text>No videos or images found</Text>
+            <Button
+                icon="refresh"
+                onPress={() => restart(true)}
+            >
+                Retry
+            </Button>
         </View>
     )
 
     return (
-    <View style={[styles.fullSize, styles.center]}>
+    <>
 
-        <PanGestureHandler
-            onGestureEvent={onGestureEvent}
-            onHandlerStateChange={onHandlerStateChange}
-        >
-            <Animated.View style={[styles.fullSize, {
+    <PanGestureHandler
+        onGestureEvent={onGestureEvent}
+        onHandlerStateChange={onHandlerStateChange}
+        maxPointers={1}
+    >
+        <Animated.View 
+            style={[styles.fullSize, {
                 transform: [{ translateY: Animated.add(translateY, offsetY) }]
-            }]}>
-                {assets[indexAsset].mediaType == MediaLibrary.MediaType.video ?
-                    <VideoPlayer 
-                        uri={getUri()} 
-                        theme={theme}
-                        btnPauseStyle={[styles.fab, styles.btmLeft]}
-                        sliderStyle={[styles.fab, styles.videoSlider]}
-                    />
-                    :
-                    <Image
-                        source={{ uri: getUri() }}
-                        style={{
-                            flex: 1,
-                            width: '100%',
-                            height: '100%',
-                            padding: 0,
-                            margin: 0,
-                        }}
-                        contentFit="contain"
-                        transition={0}                       
-                        placeholder={require('../assets/logo.png')}
-                    />
-                }
-            </Animated.View>
-        </PanGestureHandler>
+            }]}
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={() => {
+                // Clear timer
+                clearTimeout(timer!)
+                setShowOptions(true)
 
-        <View
-            style={[styles.fab, styles.btmRight]}
-        >            
-            <IconButton
-                icon={fullScreen ? 'fullscreen-exit' : 'fullscreen'}
-                onPress={() => {swapFullScreen()}}
-            />
-        </View>
+                setTimer(setTimeout(() => {
+                    setShowOptions(false)
+                }, timerInterval))
 
-        {false && <Text style={[styles.fab, styles.tpLeft]}>
-            {`
-            IndexAsset: ${indexAsset} | ActualAlbum: ${getAlbum().title}
-            AssetCount: ${assets.length} | FetchingAssetsCount: ${fetchingAssetsCount}
-            LeftAlbums: ${leftAlbums.length}`
+                if (assets[indexAsset].mediaType == MediaLibrary.MediaType.video)
+                    playPause()
+            }}
+        >
+            {assets[indexAsset].mediaType == MediaLibrary.MediaType.video ?
+                <Video
+                    ref={ref}
+                    source={{ uri: getUri() }}
+                    resizeMode={ResizeMode.CONTAIN}
+                    shouldPlay
+                    isLooping
+                    style={{ 
+                        padding: 0, 
+                        flex:1,
+                    }}
+                    onPlaybackStatusUpdate={(status) => {
+                        if (status.isLoaded) setStatus(status)
+                    }}
+                    usePoster
+                    posterSource={require('../assets/logo.png')}
+                />
+                :
+                <Image
+                    source={{ uri: getUri() }}
+                    defaultSource={require('../assets/logo.png')}
+                    style={{
+                        flex: 1,
+                        borderColor: 'red',
+                        borderWidth: 1,
+                        resizeMode: 'contain'
+                    }}
+                />
             }
-        </Text>}
+        </Animated.View>
+    </PanGestureHandler>
+    
+    {assets[indexAsset].mediaType == MediaLibrary.MediaType.video && showOptions &&
+    <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,1)']}
+        style={styles.videoOptions}
+    >
+        <IconButton
+            icon={status?.isPlaying ? 'pause' : 'play'}
+            style={{
+                borderRadius: 50,
+            }}
+            onPress={() => playPause()}
+        />
 
-    </View>
+        <CustomSlider
+            theme={theme}
+            minimumValue={0}
+            maximumValue={status?.durationMillis ?? 0}
+            value={status?.positionMillis ?? 0}
+            onSlidingComplete={(value) => ref.current?.setPositionAsync(value)}
+            indicator={getIndicator()}
+        />
+    </LinearGradient>}
+
+    <FAB.Group
+        icon={openMore ? 'close' : 'plus'}
+        style={styles.normalOptions}
+        fabStyle={{ 
+            borderRadius: 50, 
+        }}
+        variant='surface'
+        visible={showOptions}
+        open={openMore}
+        onStateChange={({ open }) => {
+            if (open) clearTimeout(timer!)
+            else 
+            setTimer(setTimeout(() => {
+                setShowOptions(false)
+            }, timerInterval))
+
+            setOpenMore(open)
+        }}
+        actions={[
+            { icon: 'share', onPress: () => onShare() },
+            { icon: fullScreen ? 'fullscreen-exit' : 'fullscreen', onPress: () => swapFullScreen() },
+        ]}
+    />
+
+    {false && <View style={styles.devInfo}>
+        <Text>
+            {`IndexAsset: ${indexAsset} | ActualAlbum: ${getAlbum().title}`}
+        </Text>
+        <Text>
+            {`AssetCount: ${assets.length} | FetchingAssetsCount: ${fetchingAssetsCount}`}
+        </Text>
+        <Text>
+            {`LeftAlbums: ${leftAlbums.length} | CountActualAlbum: ${getAlbum().assetCount}`}
+        </Text>
+    </View>}
+    </>
     )
 }
 
@@ -354,80 +456,32 @@ const styles = StyleSheet.create({
         height: '100%',
         padding: 0
     },
-    fab: {
+    videoOptions: {
         position: 'absolute',
-        margin: 10,
-    },
-    videoSlider: { 
         bottom: 0, 
-        left: 44,
-        right: 44
+        left: 0,
+        right: 0
     },
-    btmLeft: { bottom: 0, left: 0 },
-    btmRight: { bottom: 0, right: 0 },
-    tpLeft: { top: 0, left: 0 },
+    normalOptions: {
+        position: 'absolute',
+        bottom: 30,
+        right: 0,
+    },
+    devInfo: {
+        width: '100%',
+        position: 'absolute',
+        top: 20,
+        left: 0,
+        padding: 10,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
     center: {
         justifyContent: 'center',
         alignItems: 'center'
+    },
+    bottomCenter: {
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        paddingBottom: 50
     }
 })
-
-/*
-async function addNewAssetToHistory() {
-        if (assets.length + fetchingAssetsCount >= maxSizeHistory) return false
-        if (assets.length + fetchingAssetsCount >= albumsState[indexAlbum].assetCount) return false
-        addFetchingCount()
-
-        const newAssetIndex = randomizer.getRandomIndex()
-        // No more indexes
-        if (newAssetIndex == undefined) {
-            remFetchingCount()
-            return false
-        }
-
-        // GET ASSET FROM ALBUM (This is V1)
-        let iterations = 0
-        let after = undefined
-
-        // Make x páginations (if newAssetIndex > maxAssetsPagination)
-        // Example: newAssetIndex = 150, maxAssetsPagination = 100
-        // iterations = 1
-        if (newAssetIndex > maxAssetsPagination)
-            iterations = Math.floor(newAssetIndex / maxAssetsPagination)
-
-        try {
-            let i = 0
-            while (i < iterations) {
-                await MediaLibrary.getAssetsAsync({
-                    first: maxAssetsPagination,
-                    album: albumsState[indexAlbum].id,
-                    mediaType: [MediaLibrary.MediaType.photo, MediaLibrary.MediaType.video],
-                    after: after,
-                }). then((res) => { 
-                    after = res.endCursor
-                }).finally(() => { i++ })
-            }
-
-            const relatIndex = newAssetIndex - (iterations * maxAssetsPagination)
-            // Then get the asset and always get from newAssetIndex - (iterations * maxAssetsPagination)
-            await MediaLibrary.getAssetsAsync({
-                first: relatIndex + 1,
-                album: albumsState[indexAlbum].id,
-                mediaType: [MediaLibrary.MediaType.photo, MediaLibrary.MediaType.video],
-                after: after,
-            }).then((res) => { 
-                addAsset({
-                    mediaType: res.assets[relatIndex].mediaType,
-                    name: res.assets[relatIndex].filename,
-                })
-            })
-
-        } catch (error) {
-            console.log(error)
-            alert('Error al cargar assets from addNewAssetToHistory')
-        } finally {
-            remFetchingCount()
-            return true
-        }
-    }
- */

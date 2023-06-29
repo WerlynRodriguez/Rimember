@@ -91,108 +91,109 @@ export default function Albums() {
 
     const onSave = async () => {
         if (loadingStatus.fetch || loadingStatus.list) return
+
+        setModal(false)
         setLoadStatus('fetch', true)
+        let errorString = ''
 
-        try {
-            const albs = albums.filter((alb) => selected.has(alb.id))
+        const albs = albums.filter((alb) => selected.has(alb.id))
 
-            for (const alb of albs) {
-                await MediaLibrary.getAssetsAsync({
-                    album: alb.id,
-                    first: 1,
-                    mediaType: [MediaLibrary.MediaType.photo, MediaLibrary.MediaType.video]
-                }).then((res) => {
-                    /** Saving folder path
-                     * @example Example of uri: file:///storage/emulated/0/DCIM/Camera/IMG_20210602_000000.jpg
-                     * Example of filename: IMG_20210602_000000.jpg
-                     * The folder path is the uri without the filename, "file:///storage/" and folder.title
-                     **/
-                    alb.folder = res.assets[0].uri
-                    .replace(`${alb.title}/${res.assets[0].filename}`, '')
-                    .replace('file:///storage/', '')
-                })
-            }
+        for (const alb of albs) {
+            await MediaLibrary.getAssetsAsync({
+                album: alb.id,
+                first: 1,
+                mediaType: [MediaLibrary.MediaType.photo, MediaLibrary.MediaType.video]
+            }).then((res) => {
+                /** Saving folder path
+                 * @example Example of uri: file:///storage/emulated/0/DCIM/Camera/IMG_20210602_000000.jpg
+                 * Example of filename: IMG_20210602_000000.jpg
+                 * The folder path is the uri without the filename, "file:///storage/" and folder.title
+                 **/
+                alb.folder = res.assets[0].uri
+                .replace(`${alb.title}/${res.assets[0].filename}`, '')
+                .replace('file:///storage/', '')
+            }).catch((err) => {
+                errorString += `${alb.title}\n`
+            })
+        }
 
+        if (errorString !== '')
+            alert(`Error with albums:\n\n${errorString}\nChanges not saved, please remove them from the list`)
+        else {
             setAlbumsState(albs)
             await mediaStorage.albums(albs)
             setPlaying(false)
-        } catch (error) {
-            alert('Error saving albums')
-        } finally { 
-            setLoadStatus('fetch', false) 
         }
 
-        setModal(false)
+        setLoadStatus('fetch', false)
     }
 
     return (
-    <View style={{ 
-        flex: 1,
-        backgroundColor: theme.colors.background
-    }}>
-        <Appbar.Header 
-            mode='small'
-            style={{
-                backgroundColor: theme.colors.elevation.level0,
-            }}
-        >
-            <Appbar.Content title={`${count} Albums`} />
-        </Appbar.Header>
+    <>
+    <Appbar.Header
+        mode='small'
+        statusBarHeight={0}
+        style={{
+            backgroundColor: theme.colors.elevation.level0,
+        }}
+    >
+        <Appbar.Content title={`${count} Albums`} />
+    </Appbar.Header>
 
-        {loadingStatus.list || loadingStatus.fetch && (<ActivityIndicator size="large" animating style={styles.actInctr} />)}
+    {loadingStatus.list || loadingStatus.fetch && 
+    (<ActivityIndicator size="large" animating style={styles.actInctr} />)}
 
-        <FlashList
-            data={albums}
-            keyExtractor={item => item.id}
-            numColumns={columAlbums}
-            estimatedItemSize={100}
-            renderItem={({ item }) => (
-                <ListItem
-                    item={item}
-                    theme={theme}
-                    defaultChecked={selected.has(item.id)}
-                    onPress={onPressAlbum}
-                />
-            )}
-            ItemSeparatorComponent={() => (
-                <Divider bold/>
-            )}
-            ListEmptyComponent={() => (
-                <Text>No hay albums</Text>
-            )}
-            onLoad={() => {
-                setLoadStatus('list', false)
-            }}
-        />
+    <FlashList
+        data={albums}
+        keyExtractor={item => item.id}
+        numColumns={columAlbums}
+        estimatedItemSize={100}
+        renderItem={({ item }) => (
+            <ListItem
+                item={item}
+                theme={theme}
+                defaultChecked={selected.has(item.id)}
+                onPress={onPressAlbum}
+            />
+        )}
+        ItemSeparatorComponent={() => (
+            <Divider bold/>
+        )}
+        ListEmptyComponent={() => (
+            <Text>No hay albums</Text>
+        )}
+        onLoad={() => {
+            setLoadStatus('list', false)
+        }}
+    />
 
-        <FAB
-            icon='content-save'
-            style={styles.Fab}
-            onPress={() => {
-                if (playing)
-                    setModal(true)
-                else
-                    onSave()
-            }}
-            loading={loadingStatus.fetch || loadingStatus.list}
-        />
-        <Portal>
-            <Dialog visible={modal} onDismiss={() => setModal(false)}>
-                <Dialog.Title>Alert</Dialog.Title>
-                <Dialog.Content>
-                    <Text>
-                        Al guardar, se reiniciará la reproducción
-                    </Text>
-                </Dialog.Content>
-                <Dialog.Actions>
-                    <Button onPress={() => setModal(false)}>Cancel</Button>
-                    <Button onPress={onSave}>Save</Button>
-                </Dialog.Actions>
+    <FAB
+        icon='content-save'
+        style={styles.Fab}
+        onPress={() => {
+            if (playing)
+                setModal(true)
+            else
+                onSave()
+        }}
+        loading={loadingStatus.fetch || loadingStatus.list}
+    />
+    <Portal>
+        <Dialog visible={modal} onDismiss={() => setModal(false)}>
+            <Dialog.Title>Alert</Dialog.Title>
+            <Dialog.Content>
+                <Text>
+                    Al guardar, se reiniciará la reproducción
+                </Text>
+            </Dialog.Content>
+            <Dialog.Actions>
+                <Button onPress={() => setModal(false)}>Cancel</Button>
+                <Button onPress={onSave}>Save</Button>
+            </Dialog.Actions>
 
-            </Dialog>
-        </Portal>
-
-    </View>
+        </Dialog>
+    </Portal>
+    </>
     )
 }
 

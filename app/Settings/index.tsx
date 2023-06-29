@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { View, StyleSheet } from "react-native"
 import { Appbar, Button, Divider, IconButton, Surface, Switch, Text, useTheme } from "react-native-paper"
-import { useMediaStore } from "../../store"
+import { useAlbumsStore, useMediaStore } from "../../store"
 import { ScrollView } from "react-native-gesture-handler"
 import Slider from "@react-native-community/slider"
 import CustomSlider from "../../components/CustomSlider"
@@ -12,6 +12,8 @@ const maxHistorySize = 1000
 
 export default function Settings() {
     const setPlaying = useMediaStore((state) => state.setPlaying)
+    const setAlbumsState = useAlbumsStore(state => state.setAlbums)
+
     const theme = useTheme()
 
     const [repeatFiles, setRepeatFiles] = useState(false)
@@ -88,6 +90,7 @@ export default function Settings() {
     return (<>
     <Appbar.Header 
         mode='small'
+        statusBarHeight={0}
         style={{
             backgroundColor: theme.colors.elevation.level0,
         }}
@@ -175,14 +178,27 @@ export default function Settings() {
         </Section>
 
         <Button
-            mode="contained"
-            buttonColor={theme.colors.errorContainer}
+            mode="outlined"
+            style={{ marginBottom: 15, borderColor: theme.colors.errorContainer, borderWidth: 1 }}
             textColor={theme.colors.error}
             onPress={() => {
                 setPlaying(false)
             }}
         >
-            Reset
+            Reset Home
+        </Button>
+
+        <Button
+            mode="contained"
+            buttonColor={theme.colors.errorContainer}
+            textColor={theme.colors.error}
+            
+            onPress={() => {
+                setPlaying(false)
+                setAlbumsState([])
+            }
+        }>
+            Reset all
         </Button>
 
     </ScrollView>
