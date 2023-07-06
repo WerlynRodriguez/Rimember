@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Button, Divider, List, MD3Theme, Text, useTheme, Appbar, FAB, Portal, Dialog } from 'react-native-paper'
+import { ActivityIndicator, Button, Divider, List, MD3Theme, Text, useTheme, Appbar, FAB, Portal, Dialog, withTheme } from 'react-native-paper'
 import * as MediaLibrary from 'expo-media-library'
 import { StyleSheet, View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { ItemAlbum } from '../../interfaces'
 import { useAlbumsStore, useMediaStore } from '../../store'
 import { mediaStorage } from '../../config'
+import BasicDialog from '../../components/BasicDialog'
+import BasicHeader from '../../components/BasicHeader'
+import { tKeys, tr } from '../../translate'
 
 const columAlbums = 2
 
@@ -21,11 +24,6 @@ export default function Albums() {
         state.setAlbums
     ])
 
-    const [playing, setPlaying] = useMediaStore(state => [
-        state.playing,
-        state.setPlaying
-    ])
-
     const [count, setCount] = useState(albumsState.length)
 
     const [loadingStatus, setLoadingStatus] = useState({
@@ -36,8 +34,6 @@ export default function Albums() {
 
     const [albums, setAlbums] = useState<ItemAlbum[]>([])
     const [selected, setSelected] = useState<Set<string>>(getSetFromAlbums())
-
-    const theme = useTheme()
     
     useEffect(() => {
         getAllAlbums()
@@ -50,7 +46,7 @@ export default function Albums() {
         try {
             const { status } = await MediaLibrary.requestPermissionsAsync()
             if (status !== 'granted') {
-                alert('Permission to access media library is required')
+                alert(tr(tKeys.reqPermission))
                 return
             }
 
@@ -68,8 +64,6 @@ export default function Albums() {
 
             setAlbums(albs)
 
-        } catch (error) {
-            alert('Error getting albums')
         } finally { setLoadStatus('fetch', false) }
     }
 
@@ -95,17 +89,20 @@ export default function Albums() {
         setModal(false)
         setLoadStatus('fetch', true)
         let errorString = ''
+        let totalAssets = 0
 
         const albs = albums.filter((alb) => selected.has(alb.id))
 
         for (const alb of albs) {
+            totalAssets += alb.assetCount
             await MediaLibrary.getAssetsAsync({
                 album: alb.id,
                 first: 1,
                 mediaType: [MediaLibrary.MediaType.photo, MediaLibrary.MediaType.video]
             }).then((res) => {
                 /** Saving folder path
-                 * @example Example of uri: file:///storage/emulated/0/DCIM/Camera/IMG_20210602_000000.jpg
+                 * @example 
+                 * Example of uri: file:///storage/emulated/0/DCIM/Camera/IMG_20210602_000000.jpg
                  * Example of filename: IMG_20210602_000000.jpg
                  * The folder path is the uri without the filename, "file:///storage/" and folder.title
                  **/
@@ -118,11 +115,11 @@ export default function Albums() {
         }
 
         if (errorString !== '')
-            alert(`Error with albums:\n\n${errorString}\nChanges not saved, please remove them from the list`)
+            alert(`${tr(tKeys.errSetAlbums)}\n\n${errorString}`)
         else {
             setAlbumsState(albs)
             await mediaStorage.albums(albs)
-            setPlaying(false)
+            await mediaStorage.resetHistory(true)
         }
 
         setLoadStatus('fetch', false)
@@ -130,15 +127,7 @@ export default function Albums() {
 
     return (
     <>
-    <Appbar.Header
-        mode='small'
-        statusBarHeight={0}
-        style={{
-            backgroundColor: theme.colors.elevation.level0,
-        }}
-    >
-        <Appbar.Content title={`${count} Albums`} />
-    </Appbar.Header>
+    <BasicHeader title={`${tr(tKeys.albums)} ${count}`} />
 
     {loadingStatus.list || loadingStatus.fetch && 
     (<ActivityIndicator size="large" animating style={styles.actInctr} />)}
@@ -147,11 +136,10 @@ export default function Albums() {
         data={albums}
         keyExtractor={item => item.id}
         numColumns={columAlbums}
-        estimatedItemSize={100}
+        estimatedItemSize={73}
         renderItem={({ item }) => (
             <ListItem
                 item={item}
-                theme={theme}
                 defaultChecked={selected.has(item.id)}
                 onPress={onPressAlbum}
             />
@@ -160,7 +148,7 @@ export default function Albums() {
             <Divider bold/>
         )}
         ListEmptyComponent={() => (
-            <Text>No hay albums</Text>
+            <Text>No albums</Text>
         )}
         onLoad={() => {
             setLoadStatus('list', false)
@@ -170,34 +158,20 @@ export default function Albums() {
     <FAB
         icon='content-save'
         style={styles.Fab}
-        onPress={() => {
-            if (playing)
-                setModal(true)
-            else
-                onSave()
-        }}
+        onPress={() => { setModal(true) }}
         loading={loadingStatus.fetch || loadingStatus.list}
     />
-    <Portal>
-        <Dialog visible={modal} onDismiss={() => setModal(false)}>
-            <Dialog.Title>Alert</Dialog.Title>
-            <Dialog.Content>
-                <Text>
-                    Al guardar, se reiniciará la reproducción
-                </Text>
-            </Dialog.Content>
-            <Dialog.Actions>
-                <Button onPress={() => setModal(false)}>Cancel</Button>
-                <Button onPress={onSave}>Save</Button>
-            </Dialog.Actions>
-
-        </Dialog>
-    </Portal>
+    <BasicDialog
+        show={modal}
+        setShow={setModal}
+        description={tr(tKeys.warResetHistory)}
+        confirmAction={onSave}
+    />
     </>
     )
 }
 
-function ListItem({
+const ListItem = withTheme(({
     item,
     theme,
     defaultChecked,
@@ -207,7 +181,7 @@ function ListItem({
     theme: MD3Theme
     defaultChecked: boolean
     onPress: (id: string, selected: boolean) => void
-}) {
+}) => {
     const [sel, setSel] = useState(defaultChecked)
     return (
         <List.Item
@@ -232,7 +206,7 @@ function ListItem({
             }}
         />
     )
-}
+})
 
 const styles = StyleSheet.create({
     actInctr : {

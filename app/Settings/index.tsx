@@ -1,180 +1,225 @@
-import { useEffect, useRef, useState } from "react"
-import { View, StyleSheet } from "react-native"
-import { Appbar, Button, Divider, IconButton, Surface, Switch, Text, useTheme } from "react-native-paper"
-import { useAlbumsStore, useMediaStore } from "../../store"
+import { useEffect, useState } from "react"
+import { View } from "react-native"
+import { ActivityIndicator, Button, Divider, MD3Theme, Text, useTheme, withTheme } from "react-native-paper"
+import { useAlbumsStore } from "../../store"
 import { ScrollView } from "react-native-gesture-handler"
-import Slider from "@react-native-community/slider"
 import CustomSlider from "../../components/CustomSlider"
+import BasicDialog from "../../components/BasicDialog"
+import BasicHeader from "../../components/BasicHeader"
+import { configOptions, defaultConfig, mediaStorage, useStorage } from "../../config"
+import { useRouter } from "expo-router"
+import { tKeys, tr } from "../../translate"
 
-/** Those values are used to prevent the user to set a value too high or too low */
-const minHistorySize = 100
-const maxHistorySize = 1000
-
-export default function Settings() {
-    const setPlaying = useMediaStore((state) => state.setPlaying)
-    const setAlbumsState = useAlbumsStore(state => state.setAlbums)
-
-    const theme = useTheme()
-
-    const [repeatFiles, setRepeatFiles] = useState(false)
-    const [noHistoryMode, setNoHistoryMode] = useState(false)
-    const [historySize, setHistorySize] = useState(minHistorySize)
-
-    const styles = StyleSheet.create({
-        section: {
+const Section = withTheme(({
+    title, 
+    children, 
+    theme
+} : {
+    title: string
+    children: React.ReactNode
+    theme: MD3Theme
+}
+) => (
+<>
+    <Text variant="titleLarge" style={{
+        color: theme.colors.outline,
+        backgroundColor: theme.colors.backdrop,
+        padding: 15,
+        paddingBottom: 25,
+        borderRadius: theme.roundness,
+        top: 15,
+    }}>
+        {title}
+    </Text>
+    <View 
+        style={{
             padding: 15,
             borderRadius: theme.roundness,
             backgroundColor: theme.colors.background,
             marginBottom: 15
-        },
-        sectionPart: {
+        }}
+    >
+        {children}
+    </View>
+</>
+))
+
+const ItemSection = withTheme(({
+    title, desc, right, children, theme
+} : {
+    title: string,
+    desc?: string,
+    right?: React.ReactNode,
+    children?: React.ReactNode
+    theme: MD3Theme
+}) => (
+    <>
+    <View 
+        style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center'
-        }
-    })
-
-    const Section = ({
-        title, children
-    } : {
-        title: string,
-        children: React.ReactNode
-    }
-    ) => (
-    <>
-    <Text variant="titleLarge" style={{
-        color: theme.colors.outline
-    }}>
-        {title}
-    </Text>
-    <View style={styles.section}>
-        {children}
-    </View>
-    </>
-    )
-
-    const ItemSection = ({
-        title, desc, right, children
-    } : {
-        title: string,
-        desc?: string,
-        right?: React.ReactNode,
-        children?: React.ReactNode
-    }) => (
-        <>
-        <View style={styles.sectionPart}>
-            <View style={{flex: 0.8}}>
-                <Text variant="titleMedium">
-                    {title}
-                </Text>
-
-                {desc && 
-                <Text 
-                    variant="labelMedium"
-                    style={{
-                        textAlign: 'justify', 
-                        color: theme.colors.outline
-                    }}
-                >
-                    {desc}
-                </Text>}
-            </View>
-
-            {right}
-        </View>
-        {children}
-        <Divider style={{marginVertical: 15}} bold/>
-        </>
-    )
-
-    return (<>
-    <Appbar.Header 
-        mode='small'
-        statusBarHeight={0}
-        style={{
-            backgroundColor: theme.colors.elevation.level0,
         }}
     >
-        <Appbar.Content title="Settings" />
-    </Appbar.Header>
+        <View style={{ flex: 0.9 }}>
+            <Text variant="titleMedium">
+                {title}
+            </Text>
+
+            {desc && 
+            <Text 
+                variant="bodyMedium"
+                style={{
+                    color: theme.colors.outline
+                }}
+            >
+                {desc}
+            </Text>}
+        </View>
+
+        {right}
+    </View>
+    {children}
+    <Divider style={{marginVertical: 15}} bold/>
+    </>
+))
+
+export default function Settings() {
+    const router = useRouter()
+    const setAlbumsState = useAlbumsStore(state => state.setAlbums)
+
+    const theme = useTheme()
+
+    const [config, setConfig] = useState<typeof defaultConfig>(defaultConfig)
+
+    const [load, setLoad] = useState(true)
+    const [modal, setModal] = useState(false)
+    const [action, setAction] = useState(0)
+
+    useEffect(() => {
+        async function Start() {
+            setConfig(await configOptions.config())
+            setLoad(false)
+        }
+
+        Start()
+    }, [])
+
+    const ModalAction = [
+        {
+            hint: tr(tKeys.warResetHistory),
+            action: () => { mediaStorage.resetHistory(true) }
+        },
+        {
+            hint: tr(tKeys.warResetAll),
+            action: () => {
+                mediaStorage.resetHistory(true)
+                useStorage.clear()
+                setAlbumsState([])
+                setConfig(defaultConfig)
+            }
+        }
+    ]
+
+    if (load) return <ActivityIndicator animating size='large' />
+
+    return (<>
+    <BasicHeader title={tr(tKeys.settings)} />
     <ScrollView style={{
         flex: 1,
-        backgroundColor: theme.colors.elevation.level0,
         margin: 15,
         marginTop: 0,
     }}>
-        <Section title="Albums">
-            <View style={styles.sectionPart}>
-                <Text variant="titleMedium">
-                    History size
-                </Text>
-                <Text>
-                    100
-                </Text>
-            </View>
-        </Section>
 
-        <Section title="History">
+        <Section title={tr(tKeys.settings)}>
 
             <ItemSection
-                title="Repeat files"
-                desc="When you restart the app, repeat the files you already played."
-                right={
-                    <Switch
-                        value={repeatFiles}
-                        onValueChange={setRepeatFiles}
-                    />
-                }
-            />
-
-            <ItemSection
-                title="No history mode"
-                desc="Just play the next. This allow you to dont restart the history."
-                right={
-                    <Switch
-                        value={noHistoryMode}
-                        onValueChange={setNoHistoryMode}
-                    />
-                }
-            />
-
-            <ItemSection
-                title="Max history size"
-                desc="The maximum size of the history. If the history is full, it will remove oldest items."
+                title={tr(tKeys.intLoad)}
+                desc={tr(tKeys.descIntLoad)}
                 right={
                     <Text>
-                        {historySize}
+                        {config.initialLoad}
                     </Text>
                 }
             >
                 <CustomSlider
-                    disabled={noHistoryMode}
-                    value={historySize}
+                    value={config.initialLoad}
                     posIndicator
-                    indicator={`${minHistorySize} - ${maxHistorySize}`}
-                    onSlidingComplete={setHistorySize}
-                    minimumValue={minHistorySize}
-                    maximumValue={maxHistorySize}
-                    step={100}
-                    style={{
-                        marginVertical: 15
+                    indicator={`${defaultConfig.initialLoad} - ${10}`}
+                    onSlidingComplete={(value) => {
+                        setConfig({...config, initialLoad: value})
+                        configOptions.config({...config, initialLoad: value})
                     }}
-                    theme={theme}
+                    minimumValue={defaultConfig.initialLoad}
+                    maximumValue={10}
+                    step={1}
+                    style={{ marginVertical: 15 }}
+                />
+            </ItemSection>
+
+            <ItemSection
+                title={tr(tKeys.maxSizHist)}
+                desc={tr(tKeys.descMaxSizHist)}
+                right={
+                    <Text>
+                        {config.maxHistorySize}
+                    </Text>
+                }
+            >
+                <CustomSlider
+                    value={config.maxHistorySize}
+                    posIndicator
+                    indicator={`${defaultConfig.maxHistorySize} - ${100}`}
+                    onSlidingComplete={(value) => {
+                        setConfig({...config, maxHistorySize: value})
+                        configOptions.config({...config, maxHistorySize: value})
+                    }}
+                    minimumValue={defaultConfig.maxHistorySize}
+                    maximumValue={100}
+                    step={10}
+                    style={{ marginVertical: 15 }}
+                />
+            </ItemSection>
+
+            <ItemSection
+                title={tr(tKeys.timeAutoScrl)}
+                desc={tr(tKeys.descTimeAutoScrl)}
+                right={
+                    <Text>
+                        {config.timeAutoScroll / 1000} s
+                    </Text>
+                }
+            >
+                <CustomSlider
+                    value={config.timeAutoScroll}
+                    posIndicator
+                    indicator={`${defaultConfig.timeAutoScroll / 1000} s - ${10} s`}
+                    onSlidingComplete={(value) => {
+                        setConfig({...config, timeAutoScroll: value})
+                        configOptions.config({...config, timeAutoScroll: value})
+                    }}
+                    minimumValue={defaultConfig.timeAutoScroll}
+                    maximumValue={10000}
+                    step={1000}
+                    style={{ marginVertical: 15 }}
                 />
             </ItemSection>
         </Section>
 
-        <Section title="Security">
-            <ItemSection
-                title="Fingerprint"
-                desc="Use your fingerprint to unlock the app."
-                right={
-                    <Switch
-                        value={false}
-                        onValueChange={() => {}}
-                    />
-                }
-            />
+        <Section title={tr(tKeys.about)}>
+            <ItemSection title={tr(tKeys.about)}>
+                <Button
+                    mode="outlined"
+                    style={{ borderColor: theme.colors.outline, borderWidth: 1 }}
+                    textColor={theme.colors.outline}
+                    onPress={() => {
+                        router.replace('Settings/About')
+                    }}
+                    icon="information"
+                >
+                    {tr(tKeys.about)}
+                </Button>
+            </ItemSection>
         </Section>
 
         <Button
@@ -182,25 +227,33 @@ export default function Settings() {
             style={{ marginBottom: 15, borderColor: theme.colors.errorContainer, borderWidth: 1 }}
             textColor={theme.colors.error}
             onPress={() => {
-                setPlaying(false)
+                setAction(0)
+                setModal(true)
             }}
+            icon="restart"
         >
-            Reset Home
+            {tr(tKeys.resetHistory)}
         </Button>
 
         <Button
             mode="contained"
             buttonColor={theme.colors.errorContainer}
             textColor={theme.colors.error}
-            
+            icon="delete"
             onPress={() => {
-                setPlaying(false)
-                setAlbumsState([])
+                setAction(1)
+                setModal(true)
             }
         }>
-            Reset all
+            {tr(tKeys.resetAll)}
         </Button>
 
     </ScrollView>
+    <BasicDialog
+        show={modal}
+        setShow={setModal}
+        description={ModalAction[action].hint}
+        confirmAction={() => ModalAction[action].action()}
+    />
     </>)
 }

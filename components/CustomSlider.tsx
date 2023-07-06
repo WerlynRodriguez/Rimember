@@ -1,6 +1,6 @@
 import Slider from "@react-native-community/slider";
 import { SliderProps, StyleProp, View, ViewStyle } from "react-native";
-import { MD3Theme, Text } from "react-native-paper";
+import { MD3Theme, Text, withTheme } from "react-native-paper";
 
 interface CustomSliderProps extends SliderProps {
     theme: MD3Theme
@@ -17,7 +17,7 @@ interface CustomSliderProps extends SliderProps {
     containerStyle?: StyleProp<ViewStyle>
 }
 
-export default function CustomSlider(props: CustomSliderProps) {
+function CustomSlider(props: CustomSliderProps) {
     return (
     <View style={[props.containerStyle, {
         flexDirection: props?.posIndicator ? 'column-reverse' : 'column',
@@ -40,3 +40,5 @@ export default function CustomSlider(props: CustomSliderProps) {
     </View>
     )
 }
+
+export default withTheme(CustomSlider)

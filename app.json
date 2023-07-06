@@ -52,7 +52,8 @@
         {
           "initialOrientation": "DEFAULT"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {

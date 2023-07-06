@@ -21,17 +21,14 @@ export const useAlbumsStore = create<AlbumsStore>((set) => ({
 }))
 
 interface MediaStore {
-    playing: boolean
     fullScreen: boolean
     assets: AssetHistory[]
+    /** The assets that are loaded in the carrousel*/
     leftAlbums: number[]
     randomizers: Randomizer[]
     indexAsset: number
     indexAlbum: number
-    fetchingAssetsCount: number
 
-    /** Set the playing state, if true the player will restart */
-    setPlaying: (playing: boolean) => void
     /** Swap the full screen state */
     swapFullScreen: (full?: boolean) => void
     /** Add a new asset to the history */
@@ -42,16 +39,11 @@ interface MediaStore {
      **/
     setLeftAlbums: ((albums: number[]) => void) & ((albums: (albums: number[]) => number[]) => void)
     /** Set the index of the actual asset */
-    setIndexAsset: (index: number) => void
+    setIndexAsset: ((index: number) => void) & ((index: (index: number) => number) => void)
     /** Set the index of the actual album 
      * @param index The new index or a function that returns the new index
      **/
-    setIndexAlbum: (index: number) => void
-    /** Set the fetching assets count 
-     * @param count The new count or a function that returns the new count
-     * @example setFetchingCount((count) => count + 1)
-     **/
-    setFetchingCount: ((count: number) => void) & ((count: (count: number) => number) => void)
+    setIndexAlbum: ((index: number) => void) & ((index: (index: number) => number) => void)
     /** Set all the store */
     setAll: (newPartialState: Partial<MediaStore>) => void
 }
@@ -64,10 +56,7 @@ export const useMediaStore = create<MediaStore>((set) => ({
     randomizers: [],
     indexAsset: 0,
     indexAlbum: 0,
-    fetchingAssetsCount: 0,
-
-    setPlaying: (playing) => 
-        set({ playing: playing }),
+    
     swapFullScreen: (full = undefined) => 
         set((state) => ({ fullScreen: full === undefined ? !state.fullScreen : full })),
     addAsset: (asset) => 
@@ -76,11 +65,9 @@ export const useMediaStore = create<MediaStore>((set) => ({
     setLeftAlbums: (albums) => 
         set((state) => ({ leftAlbums: albums instanceof Function ? albums(state.leftAlbums) : albums })),
     setIndexAsset: (index) => 
-        set({ indexAsset: index }),
+        set((state) => ({ indexAsset: index instanceof Function ? index(state.indexAsset) : index })),
     setIndexAlbum: (index) => 
-        set({ indexAlbum: index }),
-    setFetchingCount: (count) => 
-        set((state) => ({ fetchingAssetsCount: count instanceof Function ? count(state.fetchingAssetsCount) : count })),
+        set((state) => ({ indexAlbum: index instanceof Function ? index(state.indexAlbum) : index })),
     setAll: (newPartialState) => 
         set((state) => ({ ...state, ...newPartialState }))
 }))

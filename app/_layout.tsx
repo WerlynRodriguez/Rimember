@@ -10,12 +10,13 @@ import {
     MD3Theme
 } from 'react-native-paper'
 import { useAlbumsStore, useMediaStore } from '../store'
-import { mediaStorage } from '../config';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { mediaStorage } from '../config'
+import { tKeys, tr } from '../translate';
 
 // Amoled Dark with puprle accent
 const myTheme : MD3Theme = {
     ...DefaultTheme,
+    roundness: 10,
     colors: {
         ...DefaultTheme.colors,
         primary: '#cfbcff',
@@ -60,9 +61,9 @@ interface Route {
 }
 
 const routes : Route[] = [
-    { key: '/', title: 'Home', focusedIcon: 'home', unfocusedIcon: 'home-outline' },
-    { key: 'Albums', title: 'Folders', focusedIcon: 'folder', unfocusedIcon: 'folder-outline' },
-    { key: 'Settings', title: 'Settings', focusedIcon: 'cog', unfocusedIcon: 'cog-outline' }
+    { key: '/', title: tr(tKeys.home), focusedIcon: 'home', unfocusedIcon: 'home-outline' },
+    { key: 'Albums', title: tr(tKeys.albums), focusedIcon: 'folder', unfocusedIcon: 'folder-outline' },
+    { key: 'Settings', title: tr(tKeys.settings), focusedIcon: 'cog', unfocusedIcon: 'cog-outline' }
 ]
 
 SplashScreen.preventAutoHideAsync()
@@ -74,7 +75,11 @@ export default function AppLayout() {
     const [isReady, setIsReady] = useState(false)
 
     const fullScreen = useMediaStore(state => state.fullScreen)
-    const setAlbumsState = useAlbumsStore(state => state.setAlbums)
+    const [
+        setAlbumsState
+    ] = useAlbumsStore(state => [
+        state.setAlbums
+    ])
 
     useEffect(() => {
         async function load() {
@@ -84,8 +89,8 @@ export default function AppLayout() {
             await NavigationBar.setButtonStyleAsync("light")
             await mediaStorage.albums().then(setAlbumsState)
 
-            // await 2s to prevent the splash screen to be hidden too early
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            // await 0.5s to prevent the splash screen to be hidden too early
+            await new Promise(resolve => setTimeout(resolve, 500))
 
             setIsReady(true)
         }
@@ -114,9 +119,9 @@ export default function AppLayout() {
             }]}
             onLayout={onlayout}
         >
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <Slot/>
-            </SafeAreaView>
+            </View>
 
             {!fullScreen && <BottomNavigation.Bar
                 navigationState={{ index: indexNav, routes }}
@@ -129,14 +134,19 @@ export default function AppLayout() {
                     router.replace(route.key)
                 }}
                 style={{
-                    backgroundColor: myTheme.colors.elevation.level0,
+                    backgroundColor: 'rgba(0,0,0,0.4)',
                     borderTopColor: myTheme.colors.surfaceVariant,
                     borderTopWidth: 1
                 }}
             />}
 
         </View>
-        <StatusBar style="light" hidden={fullScreen} />
+        <StatusBar 
+            style="light"
+            hidden={fullScreen}
+            translucent={false}
+            backgroundColor='black'
+        />
     </PaperProvider>
     )
 }
