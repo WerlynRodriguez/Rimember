@@ -13,7 +13,7 @@ import { useAlbumsStore, useMediaStore } from '../store'
 import { mediaStorage } from '../config'
 import { tKeys, tr } from '../translate';
 
-// Amoled Dark with puprle accent
+// Deep Dark with puprle accent
 const myTheme : MD3Theme = {
     ...DefaultTheme,
     roundness: 10,
