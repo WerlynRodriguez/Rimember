@@ -1,31 +1,31 @@
 ![Banner](./Banner.png)
 
-## Descripción
-Rimember es una aplicación de React Native creada con Expo que te permite ver videos y fotos de tu galería de manera aleatoria.
+## Description
+Rimember is a React Native app built with Expo that allows you to view videos and photos from your gallery randomly.
 
-## Descarga
-Puedes descargar la app desde este enlace en Google Drive. Me gustaría poder subirlo a la Play Store en un futuro.
+## Download
+You can download the app from this link on Google Drive. I would like to be able to upload it to the Play Store in the future.
 
-[Enlace de descarga](https://drive.google.com/file/d/1hpHPVnu9Tjh2vABqtYEk2LfXmpEdo4Yi/view?usp=sharing)
+[Download link](https://drive.google.com/file/d/1hpHPVnu9Tjh2vABqtYEk2LfXmpEdo4Yi/view?usp=sharing)
 
-## Instalación
-1. Clona este repositorio en tu máquina local.
-2. Asegúrate de tener Node.js y npm instalados.
-3. Ejecuta el siguiente comando para instalar Expo CLI: `npm install -g expo-cli`
-4. Ejecuta `npm install` para instalar las dependencias.
+## Installation
+1. Clone this repository on your local machine.
+2. Make sure you have Node.js and npm installed.
+3. Run the following command to install Expo CLI: `npm install -g expo-cli`.
+4. Run `npm install` to install the dependencies.
 
-## Uso
-1. Ejecuta el siguiente comando para iniciar la aplicación:
-2. Abre Expo Go en tu dispositivo móvil y escanea el código QR proporcionado en la consola o en el navegador.
-3. La aplicación se abrirá en tu dispositivo.
+## Usage
+1. Run the following command to start the application:
+2. Open Expo Go on your mobile device and scan the QR code provided in the console or in the browser.
+3. The app will open on your device.
 
-## Características
-- Reproduce videos y muestra fotos de manera aleatoria.
-- Interfaz intuitiva y fácil de usar.
-- Compatibilidad con Android únicamente.
-- En esta versión no se almacena el historial al salir de la app.
+## Features
+- Plays videos and displays photos randomly.
+- Intuitive and easy to use interface.
+- Compatibility with Android only.
+- In this version history is not stored when you exit the app.
 
-## Dependencias
+## Dependencies
 - "@react-native-async-storage/async-storage": "1.17.11"
 - "@react-native-community/slider": "4.4.2"
 - "@shopify/flash-list": "1.4.0"
@@ -56,5 +56,5 @@ Puedes descargar la app desde este enlace en Google Drive. Me gustaría poder su
 - "@types/react": "~18.0.14"
 - "typescript": "^4.9.4"
 
-## Contacto
-Si tienes alguna pregunta o consulta, no dudes en [contactarme](mailto:werlyndev@gmail.com).
+## Contact
+If you have any questions or queries, please do not hesitate to [contact me](mailto:werlyndev@gmail.com).
