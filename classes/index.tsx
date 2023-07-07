@@ -1,6 +1,6 @@
 const maxLength = 999
 
-/** Manage random indexes for no repeting. Sectioned */
+/** Manage random indexes for no repeting*/
 export class Randomizer {
     length: number
     /** Matrix of indexes */
@@ -61,9 +61,5 @@ export class Randomizer {
 
             return this.getRandomIndex()
         }
-    }
-
-    toString() {
-        return this.indexes.toString()
     }
 }

@@ -1,4 +1,4 @@
-import * as MediaLibrary from 'expo-media-library'
+import { MediaTypeValue } from 'expo-media-library'
 
 export interface ItemAlbum {
     id: string
@@ -9,6 +9,13 @@ export interface ItemAlbum {
 
 export interface AssetHistory {
     albumPos: number
-    mediaType: MediaLibrary.MediaTypeValue
+    mediaType: MediaTypeValue
     name: string
+}
+
+export interface Route {
+    key: string;
+    title: string;
+    focusedIcon: string;
+    unfocusedIcon: string;
 }

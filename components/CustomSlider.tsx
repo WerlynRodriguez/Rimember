@@ -17,6 +17,7 @@ interface CustomSliderProps extends SliderProps {
     containerStyle?: StyleProp<ViewStyle>
 }
 
+/** A slider with a string indicator. */
 function CustomSlider(props: CustomSliderProps) {
     return (
     <View style={[props.containerStyle, {

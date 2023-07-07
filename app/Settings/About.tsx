@@ -7,9 +7,36 @@ import { tKeys, tr } from "../../translate"
 export default function About() {
     const router = useRouter()
 
+    /** Links to show in the about dev section */
+    const links = [
+        { icon: "github", url: "https://github.com/WerlynRodriguez" },
+        { icon: "linkedin", url: "https://www.linkedin.com/in/werlyn-rodriguez-760007183/" },
+        { icon: "youtube", url: "https://www.youtube.com/@WerlynDev/videos" },
+        { icon: "gmail", url: "mailto:werlyndev@gmail.com" },
+    ]
+
+    /** Links to show in the support section */
+    const supportLinks = [
+        { icon: "parking", url: "https://paypal.me/WerlynR?country.x=NI&locale.x=es_XC" },
+        { icon: "coffee", url: "https://bmc.link/WerlynDev" },
+    ]
+
+    /** Render the button icons in any section */
+    const RenderIcons = (data: typeof links) => {
+        return data.map(({ icon, url }) => (
+            <IconButton 
+                key={icon}
+                icon={icon}
+                onPress={() => Linking.openURL(url)}
+            />
+        ))
+    }
+
     return (<>
-    <BasicHeader title={tr(tKeys.about)}
-    onBack={() => router.replace("Settings")} />
+    <BasicHeader 
+        title={tr(tKeys.about)}
+        onBack={() => router.replace("Settings")}
+    />
     <ScrollView style={{
         flex: 1,
         margin: 15,
@@ -34,22 +61,7 @@ export default function About() {
             title={tr(tKeys.aboutDev)}
             desc={tr(tKeys.descAboutDev)}
         >
-            <IconButton
-                icon="github"
-                onPress={() => Linking.openURL("https://github.com/WerlynRodriguez")}
-            />
-            <IconButton
-                icon="linkedin"
-                onPress={() => Linking.openURL("https://www.linkedin.com/in/werlyn-rodriguez-760007183/")}
-            />
-            <IconButton
-                icon="youtube"
-                onPress={() => Linking.openURL("https://www.youtube.com/@WerlynDev/videos")}
-            />
-            <IconButton
-                icon="gmail"
-                onPress={() => Linking.openURL("mailto:werlyndev@gmail.com")}
-            />
+            {RenderIcons(links)}
         </Section>
 
         <Section
@@ -61,27 +73,24 @@ export default function About() {
             title={tr(tKeys.wantSupport)}
             desc={tr(tKeys.descWantSupport)}
         >
-            <IconButton
-                icon="parking" // No found paypal icon XD
-                onPress={() => Linking.openURL("https://paypal.me/WerlynR?country.x=NI&locale.x=es_XC")}
-            />
-            <IconButton
-                icon="coffee"
-                onPress={() => Linking.openURL("https://bmc.link/WerlynDev")}
-            />
+            {RenderIcons(supportLinks)}
         </Section>
     </ScrollView>
     </>)
 }
 
+// This section is different from the settings section
 const Section = withTheme(({
     title,
     desc,
     children,
     theme
 } : {
+    /** Section title */
     title: string
+    /** Section description */
     desc?: string
+    /** Something to render inside the section */
     children?: React.ReactNode
     theme: MD3Theme
 }
@@ -97,12 +106,12 @@ const Section = withTheme(({
         <Text variant="titleLarge">
             {title}
         </Text>
-        <Text variant="bodyMedium" style={{
+        {desc && <Text variant="bodyMedium" style={{
             color: theme.colors.outline,
             marginTop: 5,
         }}>
             {desc}.
-        </Text>
+        </Text>}
         <View style={{
             flexDirection: 'row',
             justifyContent: 'space-between',

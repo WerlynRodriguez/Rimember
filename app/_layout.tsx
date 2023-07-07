@@ -9,11 +9,12 @@ import {
     MD3DarkTheme as DefaultTheme,
     MD3Theme
 } from 'react-native-paper'
+import { Route } from '../interfaces'
 import { useAlbumsStore, useMediaStore } from '../store'
 import { mediaStorage } from '../config'
 import { tKeys, tr } from '../translate';
 
-// Deep Dark with puprle accent
+// Deep Dark with purple accent
 const myTheme : MD3Theme = {
     ...DefaultTheme,
     roundness: 10,
@@ -53,17 +54,20 @@ const myTheme : MD3Theme = {
     }
 }
 
-interface Route {
-    key: string;
-    title: string;
-    focusedIcon: string;
-    unfocusedIcon: string;
-}
-
+/** All routes for the bottom navigation bar */
 const routes : Route[] = [
-    { key: '/', title: tr(tKeys.home), focusedIcon: 'home', unfocusedIcon: 'home-outline' },
-    { key: 'Albums', title: tr(tKeys.albums), focusedIcon: 'folder', unfocusedIcon: 'folder-outline' },
-    { key: 'Settings', title: tr(tKeys.settings), focusedIcon: 'cog', unfocusedIcon: 'cog-outline' }
+    { 
+        key: '/', title: tr(tKeys.home), 
+        focusedIcon: 'home', unfocusedIcon: 'home-outline' 
+    },
+    { 
+        key: 'Albums', title: tr(tKeys.albums), 
+        focusedIcon: 'folder', unfocusedIcon: 'folder-outline' 
+    },
+    { 
+        key: 'Settings', title: tr(tKeys.settings), 
+        focusedIcon: 'cog', unfocusedIcon: 'cog-outline' 
+    }
 ]
 
 SplashScreen.preventAutoHideAsync()
@@ -72,15 +76,14 @@ export default function AppLayout() {
     const router = useRouter()
     const [indexNav, setIndexNav] = useState(0)
     const [routeNav, setRouteNav] = useState(routes[indexNav].key)
+
+    // Load all needed data before showing the app
     const [isReady, setIsReady] = useState(false)
 
     const fullScreen = useMediaStore(state => state.fullScreen)
-    const [
-        setAlbumsState
-    ] = useAlbumsStore(state => [
-        state.setAlbums
-    ])
+    const setAlbumsState = useAlbumsStore(state => state.setAlbums)
 
+    // Load necesary data in the first render
     useEffect(() => {
         async function load() {
             if (isReady) return
@@ -89,15 +92,14 @@ export default function AppLayout() {
             await NavigationBar.setButtonStyleAsync("light")
             await mediaStorage.albums().then(setAlbumsState)
 
-            // await 0.5s to prevent the splash screen to be hidden too early
-            await new Promise(resolve => setTimeout(resolve, 500))
-
             setIsReady(true)
         }
 
         load()
     }, [])
 
+
+    // Hide the navigation bar when the full screen mode is enabled
     useEffect(() => {
 
         if (fullScreen) NavigationBar.setVisibilityAsync("hidden")
@@ -105,10 +107,13 @@ export default function AppLayout() {
         
     }, [fullScreen])
 
+
+    /** Hide the splash screen when the View is ready */
     const onlayout = useCallback(() => {
         if (isReady) SplashScreen.hideAsync()
     }, [isReady])
 
+    // When return null, the splash screen is shown
     if (!isReady) return null
 
     return (

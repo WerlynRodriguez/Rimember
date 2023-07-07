@@ -1,51 +1,46 @@
 import * as Localization from 'expo-localization';
 import { Dict, I18n } from 'i18n-js';
 
-export const tKeys = {
-    // APP Home
-    errAssets: 'errAsst',
-    seenAlbums: 'snAlbms',
-    loading: 'ldng',
-    actionNoAvailable: 'actNoAv',
-    noAlbums: 'noAlbms',
-    noAssets: 'noAsst',
-
-    // Layout (bottom navigation)
-    home: 'hme',
-    albums: 'albms',
-    settings: 'sttngs',
-
-    // Albums
-    reqPermission: 'reqPrmssn',
-    errSetAlbums: 'errStAlbms',
-    warResetHistory: 'warRstHstry',
-
-    // Settings
-    warResetAll: 'warRstAll',
-    intLoad: 'initLoad',
-    descIntLoad: 'dscIntLoad',
-    maxSizHist: 'maxSizHist',
-    descMaxSizHist: 'dscMaxSizHist',
-    timeAutoScrl: 'timeAutoScrl',
-    descTimeAutoScrl: 'dscTimeAutoScrl',
-    about: 'abt',
-    resetHistory: 'rstHstry',
-    resetAll: 'rstAll',
-
-    // About
-    whatIsApp: 'whIsRmbr',
-    descWhatIsApp: 'dscWhIsRmbr',
-    howToUse: 'howToUse',
-    descHowToUse: 'dscHowToUse',
-    whatHappens: 'whHppns',
-    descWhatHappens: 'dscWhHppns',
-    aboutDev: 'abtDev',
-    descAboutDev: 'dscAbtDev',
-    moreUpdates: 'mrUpdts',
-    descMoreUpdates: 'dscMrUpdts',
-    wantSupport: 'wntSpprt',
-    descWantSupport: 'dscWntSpprt',
+export enum tKeys {
+    errAssets = 'errAssts',
+    seenAlbums = 'snAlbms',
+    loading = 'ldng',
+    actionNoAvailable = 'actNoAv',
+    noAlbums = 'noAlbms',
+    noAssets = 'noAsst',
+    home = 'hme',
+    albums = 'albms',
+    settings = 'sttngs',
+    reqPermission = 'reqPrmssn',
+    errSetAlbums = 'errStAlbms',
+    warResetHistory = 'warRstHstry',
+    warResetAll = 'warRstAll',
+    intLoad = 'initLoad',
+    descIntLoad = 'dscIntLoad',
+    maxSizHist = 'maxSizHist',
+    descMaxSizHist = 'dscMaxSizHist',
+    timeAutoScrl = 'timeAutoScrl',
+    descTimeAutoScrl = 'dscTimeAutoScrl',
+    about = 'abt',
+    resetHistory = 'rstHstry',
+    resetAll = 'rstAll',
+    whatIsApp = 'whIsRmbr',
+    descWhatIsApp = 'dscWhIsRmbr',
+    howToUse = 'howToUse',
+    descHowToUse = 'dscHowToUse',
+    whatHappens = 'whHppns',
+    descWhatHappens = 'dscWhHppns',
+    aboutDev = 'abtDev',
+    descAboutDev = 'dscAbtDev',
+    moreUpdates = 'mrUpdts',
+    descMoreUpdates = 'dscMrUpdts',
+    wantSupport = 'wntSpprt',
+    descWantSupport = 'dscWntSpprt',
+    actionyes = 'actYes',
+    actionno = 'actNo'
 }
+
+
 
 const i18n = new I18n({
     es: {
@@ -83,6 +78,8 @@ const i18n = new I18n({
         [tKeys.descMoreUpdates]: 'No, como dije anteriormente, estoy generando mi portafolio, por lo que no tengo planeado seguir trabajando en esta app.',
         [tKeys.wantSupport]: '¿Quieres apoyarme?',
         [tKeys.descWantSupport]: 'Si quieres apoyarme, puedes hacerlo mediante una donación en PayPal o también me puedes comprar un café. ¿No puedes apoyarme economicamente? No te preocupes, puedes apoyarme compartiendo la app con tus amigos y familiares. ¿No tienes amigos? No pasa nada, ya me has apoyado con solo descargar la app, gracias por eso :)',
+        [tKeys.actionyes]: 'Sí, estoy seguro',
+        [tKeys.actionno]: 'Cancelar'
     },
     en: {
         [tKeys.errAssets]: 'Error loading files',
@@ -119,6 +116,8 @@ const i18n = new I18n({
         [tKeys.descMoreUpdates]: 'No, as I said before, I am generating my portfolio, so I do not plan to continue working on this app.',
         [tKeys.wantSupport]: 'Do you want to support me?',
         [tKeys.descWantSupport]: 'If you want to support me, you can do it by donating on PayPal or you can also buy me a coffee. Can\'t you support me economically? Don\'t worry, you can support me by sharing the app with your friends and family. Don\'t you have friends? It doesn\'t matter, you have already supported me just by downloading the app, thanks for that :)',
+        [tKeys.actionyes]: 'Yes, I\'m sure',
+        [tKeys.actionno]: 'Cancel'
     },
     ja: {
         [tKeys.errAssets]: 'ファイルの読み込み中にエラーが発生しました',
@@ -155,6 +154,8 @@ const i18n = new I18n({
         [tKeys.descMoreUpdates]: 'いいえ、前述のように、私はポートフォリオを作成しているので、このアプリで作業を続ける予定はありません。',
         [tKeys.wantSupport]: '私をサポートしたいですか？',
         [tKeys.descWantSupport]: '私をサポートしたい場合は、PayPalで寄付するか、コーヒーを買ってもらえます。経済的にサポートできない場合は心配しないでください。アプリを友達や家族と共有することでサポートできます。友達はいませんか？大丈夫です、アプリをダウンロードするだけで私をサポートしてくれました。ありがとうございました：）',
+        [tKeys.actionyes]: 'はい、確信しています',
+        [tKeys.actionno]: 'キャンセル'
     }
 })
 

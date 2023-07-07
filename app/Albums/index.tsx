@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Button, Divider, List, MD3Theme, Text, useTheme, Appbar, FAB, Portal, Dialog, withTheme } from 'react-native-paper'
+import { 
+    ActivityIndicator, 
+    Divider, 
+    List, 
+    MD3Theme, 
+    Text, 
+    FAB, 
+    withTheme 
+} from 'react-native-paper'
 import * as MediaLibrary from 'expo-media-library'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { ItemAlbum } from '../../interfaces'
-import { useAlbumsStore, useMediaStore } from '../../store'
+import { useAlbumsStore } from '../../store'
 import { mediaStorage } from '../../config'
 import BasicDialog from '../../components/BasicDialog'
 import BasicHeader from '../../components/BasicHeader'
@@ -27,8 +35,8 @@ export default function Albums() {
     const [count, setCount] = useState(albumsState.length)
 
     const [loadingStatus, setLoadingStatus] = useState({
-        fetch: true,
-        list: true
+        fetch: true, // Getting albums
+        list: true // Loading flash list
     })
     const [modal, setModal] = useState(false)
 
@@ -41,6 +49,8 @@ export default function Albums() {
 
     const setLoadStatus = (name: string, value: boolean) => setLoadingStatus(prev => ({ ...prev, [name]: value }))
 
+    /** Getting all albums from media library (used in the first render)
+     **/
     const getAllAlbums = async () => {
         setLoadStatus('fetch', true)
         try {
@@ -52,21 +62,25 @@ export default function Albums() {
 
             // Getting albums from media library
             const MdAlbs = await MediaLibrary.getAlbumsAsync()
-            MdAlbs.sort((a, b) => a.title.localeCompare(b.title))
+            MdAlbs.sort((a, b) => a.title.localeCompare(b.title)) // Sort by title
 
-            const albs: ItemAlbum[] = MdAlbs.map((alb) => ({
-                id: alb.id,
-                title: alb.title,
-                assetCount: alb.assetCount,
-                folder: ""
-            }))
-
-
-            setAlbums(albs)
+            // Converting to ItemAlbum
+            setAlbums(
+                MdAlbs.map((alb) => ({
+                    id: alb.id,
+                    title: alb.title,
+                    assetCount: alb.assetCount,
+                    folder: ""
+                }))
+            )
 
         } finally { setLoadStatus('fetch', false) }
     }
 
+    /** Selecting or unselecting album
+     * @param id Album id
+     * @param selected If album is selected
+     **/
     const onPressAlbum = (id: string, selected: boolean) => {
         if (selected) {
             setCount(prev => prev - 1)
@@ -83,18 +97,18 @@ export default function Albums() {
         }
     }
 
+    /** Saving new albums
+     **/
     const onSave = async () => {
         if (loadingStatus.fetch || loadingStatus.list) return
 
-        setModal(false)
         setLoadStatus('fetch', true)
         let errorString = ''
-        let totalAssets = 0
 
         const albs = albums.filter((alb) => selected.has(alb.id))
 
         for (const alb of albs) {
-            totalAssets += alb.assetCount
+
             await MediaLibrary.getAssetsAsync({
                 album: alb.id,
                 first: 1,
@@ -122,6 +136,7 @@ export default function Albums() {
             await mediaStorage.resetHistory(true)
         }
 
+        setModal(false)
         setLoadStatus('fetch', false)
     }
 
@@ -166,6 +181,8 @@ export default function Albums() {
         setShow={setModal}
         description={tr(tKeys.warResetHistory)}
         confirmAction={onSave}
+        onConfirmClose={false}
+        loading={loadingStatus.fetch}
     />
     </>
     )
@@ -177,9 +194,12 @@ const ListItem = withTheme(({
     defaultChecked,
     onPress
 }: {
+    /** Album item */
     item: ItemAlbum
     theme: MD3Theme
+    /** If album should be selected */
     defaultChecked: boolean
+    /** Function to call when album is selected or unselected */
     onPress: (id: string, selected: boolean) => void
 }) => {
     const [sel, setSel] = useState(defaultChecked)

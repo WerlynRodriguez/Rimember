@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { View } from "react-native"
-import { ActivityIndicator, Button, Divider, MD3Theme, Text, useTheme, withTheme } from "react-native-paper"
+import { Button, Divider, MD3Theme, Text, useTheme, withTheme } from "react-native-paper"
 import { useAlbumsStore } from "../../store"
 import { ScrollView } from "react-native-gesture-handler"
 import CustomSlider from "../../components/CustomSlider"
@@ -9,13 +9,17 @@ import BasicHeader from "../../components/BasicHeader"
 import { configOptions, defaultConfig, mediaStorage, useStorage } from "../../config"
 import { useRouter } from "expo-router"
 import { tKeys, tr } from "../../translate"
+import LoadingScreen from "../../components/LoadingScreen"
+
 
 const Section = withTheme(({
     title, 
     children, 
     theme
 } : {
+    /** Section title */
     title: string
+    /** Something to render inside the section */
     children: React.ReactNode
     theme: MD3Theme
 }
@@ -44,12 +48,17 @@ const Section = withTheme(({
 </>
 ))
 
+
 const ItemSection = withTheme(({
     title, desc, right, children, theme
 } : {
+    /** Item title */
     title: string,
+    /** Item description for the title */
     desc?: string,
+    /** Something to render on the right of the item */
     right?: React.ReactNode,
+    /** Something to render inside the item */
     children?: React.ReactNode
     theme: MD3Theme
 }) => (
@@ -98,13 +107,16 @@ export default function Settings() {
 
     useEffect(() => {
         async function Start() {
-            setConfig(await configOptions.config())
+            await configOptions.config().then(setConfig)
             setLoad(false)
         }
 
         Start()
     }, [])
 
+
+    /** Texts and confirm actions for the modal 
+     **/
     const ModalAction = [
         {
             hint: tr(tKeys.warResetHistory),
@@ -121,7 +133,7 @@ export default function Settings() {
         }
     ]
 
-    if (load) return <ActivityIndicator animating size='large' />
+    if (load) return <LoadingScreen />
 
     return (<>
     <BasicHeader title={tr(tKeys.settings)} />

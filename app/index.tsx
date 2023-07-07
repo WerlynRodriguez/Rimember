@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { StyleSheet, View, ToastAndroid, TouchableWithoutFeedback, Animated } from 'react-native'
-import { 
-    ActivityIndicator,
-    Button,
+import {
     FAB,
     IconButton,
     Text,
@@ -21,6 +19,7 @@ import { AVPlaybackStatusSuccess, ResizeMode, Video } from 'expo-av'
 import { configOptions, defaultConfig, height, mediaStorage } from '../config'
 import { HandlerStateChangeEvent, PanGestureHandler, PanGestureHandlerEventPayload, State } from 'react-native-gesture-handler'
 import { tr, tKeys } from '../translate'
+import LoadingScreen from '../components/LoadingScreen'
 
 export default function Home() {
     const theme = useTheme()
@@ -71,8 +70,23 @@ export default function Home() {
                 ScreenOrientation.Orientation.LANDSCAPE_RIGHT
             ) swapFullScreen(true)
         }
-
         ScreenOrientation.addOrientationChangeListener(onChangeOrientation)
+
+        /** In the first render, get the config and reset the history if is true
+         **/
+        const startApp = async () => {
+            const resetHistory = await mediaStorage.resetHistory()
+            const config = await configOptions.config()
+            setHistoryConfig(config)
+
+            if (albumsState.length != 0) {
+                if (resetHistory) {
+                    await mediaStorage.resetHistory(false)
+                    restart(true, config)
+                } else if (assets.length == 0) restart(true, config)
+                else setLoadStatus(false)
+            } else setLoadStatus(false)
+        }
 
         startApp()
 
@@ -129,23 +143,6 @@ export default function Home() {
         
         videoRef.current.playAsync()
         setPauseOptions(false)
-    }
-
-    /** In the first render, get the config and reset the history if is true
-     **/
-    const startApp = async () => {
-        const resetHistory = await mediaStorage.resetHistory()
-        const config = await configOptions.config()
-        setHistoryConfig(config)
-
-        if (albumsState.length != 0) {
-            if (resetHistory) {
-                await mediaStorage.resetHistory(false)
-                restart(true, config)
-            } else if (assets.length == 0) restart(true, config)
-        }
-        
-        setLoadStatus(false)
     }
 
     /** Show a toast with a message (ANDROID ONLY) */
@@ -275,6 +272,7 @@ export default function Home() {
     const animateToMiddle = () =>
         Animated.spring(translateY, {
             toValue: 0,
+            velocity: 100,
             useNativeDriver: true,
         }).start()
 
@@ -289,7 +287,7 @@ export default function Home() {
     ) => {
         Animated.timing(translateY, {
             toValue: -translationY,
-            duration: 200,
+            duration: 100,
             useNativeDriver: true,
         }).start(({ finished }) => {
 
@@ -391,11 +389,7 @@ export default function Home() {
         />
     
 
-    if (loadStatus) return (
-        <View style={[styles.bottomCenter, styles.fullSize]}>
-            <ActivityIndicator animating size='large' />
-        </View>
-    )
+    if (loadStatus) return <LoadingScreen />
 
     if (albumsState.length == 0) return (
         <View style={[styles.bottomCenter, styles.fullSize]}>

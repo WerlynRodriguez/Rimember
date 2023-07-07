@@ -25,7 +25,8 @@
     "android": {
       "requireFullScreen": true,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
+        "foregroundImage": "./assets/iconAdaptive.png",
+        "monochromeImage": "./assets/iconAdaptive.png",
         "backgroundColor": "#000000"
       },
       "permissions": [
