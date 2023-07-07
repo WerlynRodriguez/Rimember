@@ -1,4 +1,4 @@
-# Rimember
+![Banner](./Banner.png)
 
 ## Descripción
 Rimember es una aplicación de React Native creada con Expo que te permite ver videos y fotos de tu galería de manera aleatoria.
