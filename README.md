@@ -5,8 +5,9 @@ Rimember is a React Native app built with Expo that allows you to view videos an
 
 ## Download
 You can download the app from this link on Google Drive. I would like to be able to upload it to the Play Store in the future.
-
-[Download link](https://drive.google.com/file/d/1hpHPVnu9Tjh2vABqtYEk2LfXmpEdo4Yi/view?usp=sharing)
+<div align="center">
+  <a href="https://drive.google.com/file/d/1hpHPVnu9Tjh2vABqtYEk2LfXmpEdo4Yi/view?usp=sharing">Download link</a>
+</div>
 
 ## Installation
 1. Clone this repository on your local machine.
